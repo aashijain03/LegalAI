@@ -1,9 +1,12 @@
 import { readFileSync } from "fs";
+import path from "path";
 
 let documents = [];
 
 export function loadData() {
-  const text = readFileSync("data/legal.txt", "utf-8");
+  const filePath = path.join(process.cwd(), "data", "legal.txt");
+  const text = readFileSync(filePath, "utf-8");
+
 
   documents = text.split("\n").filter(line => line.trim() !== "");
 }

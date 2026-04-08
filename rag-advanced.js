@@ -1,4 +1,5 @@
 import { readFileSync } from "fs";
+import path from "path";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
@@ -6,7 +7,9 @@ import { FaissStore } from "@langchain/community/vectorstores/faiss";
 let vectorStore;
 
 export async function setupRAG() {
-  const text = readFileSync("data/legal.txt", "utf-8");
+  const filePath = path.join(process.cwd(), "data", "legal.txt");
+  const text = readFileSync(filePath, "utf-8");
+
 
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 200,
