@@ -8,8 +8,8 @@
     ],
     "functions": {
         "server.js": {
-            "runtime": "vercel-node@latest",
-            "includeFiles": "data/*"
+            "runtime": "@vercel/node",
+            "includeFiles": "data/**"
         }
     }
 }
