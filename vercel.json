@@ -3,12 +3,7 @@
     "rewrites": [
         {
             "source": "/(.*)",
-            "destination": "Backend/server.js"
+            "destination": "server.js"
         }
-    ],
-    "functions": {
-        "Backend/server.js": {
-            "includeFiles": "Backend/data/**"
-        }
-    }
+    ]
 }
