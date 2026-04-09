@@ -10,10 +10,20 @@ import Tesseract from "tesseract.js";
 
 
 import { loadData } from "./rag.js";
-loadData();
-
 import { setupRAG, getRelevantContext } from "./rag-advanced.js";
-await setupRAG();
+
+// Lazy initialization
+let isInitialized = false;
+async function initialize() {
+  if (!isInitialized) {
+    console.log("Initializing systems...");
+    loadData();
+    await setupRAG();
+    isInitialized = true;
+    console.log("Systems initialized");
+  }
+}
+
 
 async function fetchWithRetry(url, options, retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -53,7 +63,9 @@ app.get("/", (req, res) => {
 
 app.post("/scan", upload.single("document"), async (req, res) => {
   try {
+    await initialize();
     console.log("Scan request received");
+
     let text = "";
     if (req.file) {
       console.log("File received:", req.file.originalname, "Mime:", req.file.mimetype);
@@ -176,7 +188,9 @@ app.post("/scan", upload.single("document"), async (req, res) => {
 });
 
 app.post("/legal", async (req, res) => {
+  await initialize();
   const { question } = req.body;
+
   const context = await getRelevantContext(question);
 
   try {
