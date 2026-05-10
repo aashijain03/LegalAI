@@ -57,7 +57,7 @@ export function ScanDocument() {
     formData.append("document", selectedFile);
 
     try {
-      const response = await fetch("http://localhost:3001/scan", {
+      const response = await fetch("https://legalai-backend-v4t2.onrender.com/scan", {
         method: "POST",
         body: formData,
       });
