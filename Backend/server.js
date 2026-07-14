@@ -187,11 +187,41 @@ app.post("/scan", upload.single("document"), async (req, res) => {
   }
 });
 
-app.post("/legal", async (req, res) => {
+app.post("/legal", upload.single("document"), async (req, res) => {
   await initialize();
   const { question } = req.body;
 
-  const context = await getRelevantContext(question);
+  let fileText = "";
+  if (req.file) {
+    if (req.file.mimetype === "application/pdf") {
+      const parser = new PDFParse({ data: req.file.buffer });
+      const data = await parser.getText();
+      fileText = data.text;
+      await parser.destroy();
+    } else if (
+      req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      req.file.originalname.endsWith(".docx")
+    ) {
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      fileText = result.value;
+    } else if (
+      req.file.mimetype === "application/msword" ||
+      req.file.originalname.endsWith(".doc")
+    ) {
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      fileText = result.value;
+    } else if (req.file.mimetype.startsWith("image/")) {
+      const result = await Tesseract.recognize(req.file.buffer, "eng");
+      fileText = result.data.text;
+    } else {
+      fileText = req.file.buffer.toString("utf8");
+    }
+  }
+
+  let context = await getRelevantContext(question);
+  if (fileText) {
+    context = `[ATTACHED DOCUMENT CONTENT]:\n${fileText.substring(0, 10000)}\n\n[GENERAL LEGAL CONTEXT]:\n${context}`;
+  }
 
   try {
     const response = await fetchWithRetry(
@@ -210,19 +240,23 @@ app.post("/legal", async (req, res) => {
             {
               role: "user",
               content: `
-                        You are a legal assistant for Indian users.
+                        You are an expert legal assistant for Indian users. Your task is to provide helpful, accurate, and detailed legal advice.
 
-                        Use ONLY the context below to answer.
+                        First, check if the provided Context is relevant to the Question. 
+                        - If it is relevant, use it to answer the question.
+                        - If it is NOT relevant, ignore the Context entirely and answer the question using your general legal knowledge.
+                        
+                        CRITICAL: DO NOT mention the context in your response. DO NOT say "The context provided does not contain...". Just answer the question directly.
 
                         Context:
                         ${context}
 
-                        Return ONLY JSON:
+                        Return ONLY valid JSON in this exact structure:
                         {
-                          "explanation": "...",
-                          "what_to_do": [],
-                          "warnings": [],
-                          "risk_level": "low / medium / high"
+                          "explanation": "Detailed explanation answering the user's question.",
+                          "what_to_do": ["Actionable step 1", "Actionable step 2"],
+                          "warnings": ["Warning 1", "Warning 2"],
+                          "risk_level": "low"
                         }
 
                         Question: ${question}

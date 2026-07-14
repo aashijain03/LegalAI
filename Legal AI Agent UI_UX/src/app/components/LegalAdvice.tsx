@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Textarea } from "./ui/textarea";
@@ -38,6 +38,7 @@ export function LegalAdvice() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -61,14 +62,25 @@ export function LegalAdvice() {
     setMessages((prev) => [...prev, userMessage]);
     const currentInput = inputValue;
     setInputValue("");
+    setSelectedFile(null);
     setIsTyping(true);
 
+    let requestOptions: RequestInit = {
+      method: "POST",
+    };
+
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("document", selectedFile);
+      formData.append("question", currentInput);
+      requestOptions.body = formData;
+    } else {
+      requestOptions.headers = { "Content-Type": "application/json" };
+      requestOptions.body = JSON.stringify({ question: currentInput });
+    }
+
     try {
-      const response = await fetch("https://legalai-backend-v4t2.onrender.com/legal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: currentInput }),
-      });
+      const response = await fetch("http://localhost:3001/legal", requestOptions);
 
       const data = await response.json();
 
@@ -173,8 +185,8 @@ export function LegalAdvice() {
                       {message.structured.risk_level && (
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${message.structured.risk_level === "high" ? "bg-red-100 text-red-700" :
-                              message.structured.risk_level === "medium" ? "bg-amber-100 text-amber-700" :
-                                "bg-green-100 text-green-700"
+                            message.structured.risk_level === "medium" ? "bg-amber-100 text-amber-700" :
+                              "bg-green-100 text-green-700"
                             }`}>
                             {message.structured.risk_level.toUpperCase()} RISK
                           </span>
@@ -250,12 +262,38 @@ export function LegalAdvice() {
           </div>
 
           <div className="border-t border-slate-200 p-4">
+            {selectedFile && (
+              <div className="flex items-center justify-between bg-slate-100 px-3 py-2 rounded-lg mb-2 text-sm text-slate-700">
+                <span className="truncate">{selectedFile.name} <span className="text-xs text-slate-500">({(selectedFile.size / 1024).toFixed(1)} KB)</span></span>
+                <button onClick={() => setSelectedFile(null)} className="text-slate-400 hover:text-red-500 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
+              <input
+                type="file"
+                id="legal-file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setSelectedFile(e.target.files[0]);
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                className="self-end"
+                onClick={() => document.getElementById("legal-file")?.click()}
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
               <Textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask a legal question..."
+                placeholder="Ask a legal question or attach a document..."
                 className="resize-none"
                 rows={2}
               />

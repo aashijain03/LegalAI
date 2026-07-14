@@ -1,7 +1,85 @@
-If a user is a victim of UPI fraud, they should immediately call 1930 (India cybercrime helpline) and report the issue.
+If a user is a victim of UPI fraud, they should immediately call 1930 (India Cyber Crime Helpline) and report the incident.
 
-RBI guidelines state that reporting fraud within 24 hours increases chances of recovery.
+Cybercrime complaints can be filed online at https://cybercrime.gov.in.
 
-Never share OTP or banking credentials with anyone.
+According to RBI guidelines, reporting unauthorized digital transactions as soon as possible improves the chances of recovering lost funds.
 
-Cybercrime complaints can also be filed at https://cybercrime.gov.in
+Never share OTP, UPI PIN, CVV, debit card PIN, internet banking password, or banking credentials with anyone.
+
+Banks never ask customers to disclose OTP, PIN, or passwords over phone calls, SMS, WhatsApp, or email.
+
+Victims of online financial fraud should immediately inform their bank to block the transaction and secure their account.
+
+A legal notice is a formal communication sent before initiating legal proceedings. Receiving a legal notice does not automatically mean a lawsuit has been filed.
+
+A person receiving a legal notice should carefully read it and respond within the time mentioned in the notice whenever appropriate.
+
+Ignoring a legal notice may result in civil or criminal proceedings depending on the nature of the dispute.
+
+Loan disputes are generally civil matters unless fraud, cheating, or criminal breach of trust is involved.
+
+A cheque returned unpaid due to insufficient funds may attract proceedings under Section 138 of the Negotiable Instruments Act, 1881.
+
+The limitation period for filing a money recovery suit is generally three years from the date the money became due, subject to applicable law.
+
+Under the Consumer Protection Act, 2019, consumers can seek compensation for defective goods, deficient services, unfair trade practices, and misleading advertisements.
+
+Consumers should preserve invoices, receipts, emails, messages, and payment proofs while filing a consumer complaint.
+
+Tenants and landlords should execute a written rent agreement to avoid future disputes.
+
+Eviction procedures generally require compliance with applicable rent control laws and due legal process.
+
+Property buyers should verify ownership documents, encumbrance certificates, and approvals before purchasing immovable property.
+
+A registered sale deed is an important document for transferring ownership of immovable property.
+
+A First Information Report (FIR) is generally registered for cognizable offences by the police.
+
+For non-cognizable offences, the police may record a Non-Cognizable Report (NCR) and seek directions from the Magistrate where required.
+
+Anyone arrested has the right to know the grounds of arrest.
+
+An arrested person has the right to consult and be defended by a lawyer of their choice.
+
+A person produced after arrest should ordinarily be presented before the nearest Magistrate within 24 hours, excluding travel time, unless otherwise permitted by law.
+
+Bail is a legal process through which an accused person may seek release from custody subject to applicable legal provisions.
+
+Domestic violence victims can seek protection, residence orders, monetary relief, custody orders, and compensation under the Protection of Women from Domestic Violence Act, 2005.
+
+Dowry demand is prohibited under the Dowry Prohibition Act, 1961.
+
+Sexual harassment at the workplace is prohibited under the Sexual Harassment of Women at Workplace (Prevention, Prohibition and Redressal) Act, 2013.
+
+Every organization meeting the legal threshold should constitute an Internal Committee to address workplace sexual harassment complaints.
+
+Divorce in India is governed by personal laws applicable to the parties depending on their religion and other applicable statutes.
+
+Mutual consent divorce generally requires both spouses to agree to dissolve the marriage.
+
+Parents have a legal obligation to maintain their minor children.
+
+Senior citizens may seek maintenance from their children under applicable laws.
+
+A will allows a person to specify how their property should be distributed after death.
+
+Registering a will is generally optional but may help establish authenticity.
+
+Driving without a valid driving licence is punishable under the Motor Vehicles Act.
+
+Every motor vehicle used in a public place should generally have valid registration and insurance.
+
+Using another person's copyrighted work without permission may amount to copyright infringement unless permitted by law.
+
+Trademark registration helps protect a brand name, logo, or symbol from unauthorized use.
+
+Contracts should clearly specify the parties, obligations, consideration, timelines, and dispute resolution mechanism.
+
+An agreement entered into through fraud, coercion, or misrepresentation may be challenged under applicable law.
+
+Digital contracts and electronic signatures are recognized under the Information Technology Act, 2000, subject to legal requirements.
+
+Individuals have a right to seek legal remedies before competent courts or authorities whenever their legal rights are violated.
+
+The information provided is for general legal awareness and should not be treated as a substitute for advice from a qualified advocate.
