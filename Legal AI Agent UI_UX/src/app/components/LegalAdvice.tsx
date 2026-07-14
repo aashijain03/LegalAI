@@ -80,7 +80,7 @@ export function LegalAdvice() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/legal", requestOptions);
+      const response = await fetch("https://legalai-backend-v4t2.onrender.com/legal", requestOptions);
 
       const data = await response.json();
 
