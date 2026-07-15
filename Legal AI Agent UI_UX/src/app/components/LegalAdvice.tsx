@@ -3,6 +3,7 @@ import { Send, Bot, User, Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Textarea } from "./ui/textarea";
+import { API_BASE_URL } from "../api";
 
 type LegalResponse = {
   explanation?: string;
@@ -80,9 +81,13 @@ export function LegalAdvice() {
     }
 
     try {
-      const response = await fetch("https://legalai-backend-v4t2.onrender.com/legal", requestOptions);
+      const response = await fetch(`${API_BASE_URL}/legal`, requestOptions);
 
       const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to get legal advice");
+      }
 
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),

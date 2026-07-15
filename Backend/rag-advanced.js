@@ -1,15 +1,18 @@
 import { readFileSync } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 
 let documents = [];
 let embeddingsInstance;
 let documentEmbeddings = [];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function setupRAG() {
   try {
-    const filePath = path.join(process.cwd(), "data", "legal.txt");
+    const filePath = path.join(__dirname, "data", "legal.txt");
     const text = readFileSync(filePath, "utf-8");
 
     const splitter = new RecursiveCharacterTextSplitter({

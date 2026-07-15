@@ -1,10 +1,13 @@
 import { readFileSync } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 let documents = [];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function loadData() {
-  const filePath = path.join(process.cwd(), "data", "legal.txt");
+  const filePath = path.join(__dirname, "data", "legal.txt");
   const text = readFileSync(filePath, "utf-8");
 
 

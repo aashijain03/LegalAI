@@ -53,9 +53,45 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const HF_API_KEY = process.env.HF_API_KEY;
+const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen2.5-7B-Instruct";
+const HF_FALLBACK_MODELS = (process.env.HF_FALLBACK_MODELS || "HuggingFaceH4/zephyr-7b-beta")
+  .split(",")
+  .map((model) => model.trim())
+  .filter(Boolean);
 console.log("API KEY LOADED:", HF_API_KEY ? "Yes" : "No");
+
+async function callHuggingFaceChat(payload) {
+  const models = [...new Set([HF_MODEL, ...HF_FALLBACK_MODELS])];
+  let lastError = "";
+
+  for (const model of models) {
+    const response = await fetchWithRetry(
+      "https://router.huggingface.co/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...payload,
+          model,
+        }),
+      }
+    );
+
+    if (response.ok) {
+      return response;
+    }
+
+    lastError = await response.text();
+    console.error("HF API Error:", response.status, model, lastError);
+  }
+
+  throw new Error(lastError || "HF API failed");
+}
 
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
@@ -114,22 +150,13 @@ app.post("/scan", upload.single("document"), async (req, res) => {
     }
 
     console.log("Sending to HF API...");
-    const response = await fetchWithRetry(
-      "https://router.huggingface.co/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "Qwen/Qwen2.5-Coder-32B-Instruct",
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "user",
-              content: `
+    const response = await callHuggingFaceChat({
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "user",
+          content: `
           Analyze the following legal document (or excerpt) and identify key risks:
           
           "${text}"
@@ -150,11 +177,9 @@ app.post("/scan", upload.single("document"), async (req, res) => {
             "recommendations": ["suggestion1", "suggestion2"]
           }
           `
-            }
-          ]
-        })
-      }
-    );
+        }
+      ]
+    });
 
     if (!response.ok) {
       const errText = await response.text();
@@ -224,22 +249,13 @@ app.post("/legal", upload.single("document"), async (req, res) => {
   }
 
   try {
-    const response = await fetchWithRetry(
-      "https://router.huggingface.co/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "Qwen/Qwen2.5-Coder-32B-Instruct",
-          temperature: 0.3,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "user",
-              content: `
+    const response = await callHuggingFaceChat({
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "user",
+          content: `
                         You are an expert legal assistant for Indian users. Your task is to provide helpful, accurate, and detailed legal advice.
 
                         First, check if the provided Context is relevant to the Question. 
@@ -261,13 +277,16 @@ app.post("/legal", upload.single("document"), async (req, res) => {
 
                         Question: ${question}
                     `
-            }
-          ]
-        }),
-      }
-    );
+        }
+      ]
+    });
 
     const rawText = await response.text();
+
+    if (!response.ok) {
+      console.error("HF API Error:", response.status, rawText);
+      return res.status(500).json({ error: "HF API failed" });
+    }
 
     let data;
     try {
@@ -277,13 +296,23 @@ app.post("/legal", upload.single("document"), async (req, res) => {
       return res.status(500).json({ error: "Invalid AI response" });
     }
 
-    const result = data.choices?.[0]?.message?.content;
+    const result =
+      data.choices?.[0]?.message?.content ||
+      data.choices?.[0]?.text ||
+      data.generated_text ||
+      data[0]?.generated_text;
+
+    if (!result) {
+      console.error("Unexpected AI response:", rawText);
+      return res.status(500).json({ error: "Unexpected AI response" });
+    }
 
     let parsed;
 
     try {
-      parsed = JSON.parse(result);
+      parsed = JSON.parse(cleanAIResponse(result));
     } catch (e) {
+      console.error("Failed to parse AI response as JSON:", result);
       return res.status(500).json({ error: "Invalid JSON from AI" });
     }
 
@@ -295,18 +324,16 @@ app.post("/legal", upload.single("document"), async (req, res) => {
   }
 });
 
-if (!process.env.VERCEL) {
-  const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`Port ${PORT} is already in use. Please kill the existing process and try again.`);
-    } else {
-      console.error('Server error:', err);
-    }
-  });
-}
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use. Please kill the existing process and try again.`);
+  } else {
+    console.error("Server error:", err);
+  }
+});
 
 export default app;

@@ -4,6 +4,7 @@ import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-rea
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Progress } from "./ui/progress";
+import { API_BASE_URL } from "../api";
 
 export function ScanDocument() {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ export function ScanDocument() {
     formData.append("document", selectedFile);
 
     try {
-      const response = await fetch("https://legalai-backend-v4t2.onrender.com/scan", {
+      const response = await fetch(`${API_BASE_URL}/scan`, {
         method: "POST",
         body: formData,
       });
