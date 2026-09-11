@@ -1,8 +1,10 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { Scale, ScanText, MessageSquareText } from "lucide-react";
+import { Scale, ScanText, MessageSquareText, LogOut, User as UserIcon } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Layout() {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -24,26 +26,57 @@ export function Layout() {
             <nav className="flex items-center gap-1">
               <Link
                 to="/scan"
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                  isActive("/scan")
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${isActive("/scan")
                     ? "bg-slate-100 text-slate-900"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 <ScanText className="w-4 h-4" />
                 <span>Scan Document</span>
               </Link>
               <Link
                 to="/advice"
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                  isActive("/advice")
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${isActive("/advice")
                     ? "bg-slate-100 text-slate-900"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 <MessageSquareText className="w-4 h-4" />
                 <span>Legal Advice</span>
               </Link>
+
+              {user ? (
+                <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-200">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
+                      <UserIcon className="w-4 h-4 text-slate-600" />
+                    </div>
+                    <span>{user.name}</span>
+                  </div>
+                  <button
+                    onClick={() => logout()}
+                    className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors px-3 py-2 rounded-md hover:bg-red-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
+                  <Link
+                    to="/login"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="text-sm font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors px-4 py-2 rounded-md"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
             </nav>
           </div>
         </div>
