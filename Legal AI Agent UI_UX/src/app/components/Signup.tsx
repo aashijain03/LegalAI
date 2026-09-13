@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { API_BASE_URL } from "../api";
 import { useAuth } from "../contexts/AuthContext";
@@ -13,8 +13,13 @@ export function Signup() {
     const navigate = useNavigate();
     const { login, user } = useAuth();
 
+    useEffect(() => {
+        if (user) {
+            navigate("/");
+        }
+    }, [user, navigate]);
+
     if (user) {
-        navigate("/");
         return null;
     }
 

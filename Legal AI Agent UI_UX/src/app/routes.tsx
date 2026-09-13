@@ -7,6 +7,9 @@ import { DocumentAnalysis } from "./components/DocumentAnalysis";
 import { NotFound } from "./components/NotFound";
 import { Login } from "./components/Login";
 import { Signup } from "./components/Signup";
+import { Profile } from "./components/Profile";
+import { CasesList } from "./components/CasesList";
+import { CaseDetail } from "./components/CaseDetail";
 
 export const router = createBrowserRouter([
   {
@@ -19,6 +22,9 @@ export const router = createBrowserRouter([
       { path: "analysis/:id", Component: DocumentAnalysis },
       { path: "login", Component: Login },
       { path: "signup", Component: Signup },
+      { path: "profile", Component: Profile },
+      { path: "cases", Component: CasesList },
+      { path: "cases/:id", Component: CaseDetail },
       { path: "*", Component: NotFound },
     ],
   },

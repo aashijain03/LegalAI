@@ -1,17 +1,16 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config();
 import cors from "cors";
-import multer from "multer";
-import { createRequire } from "module";
-import { PDFParse } from "pdf-parse";
-import mammoth from "mammoth";
-import Tesseract from "tesseract.js";
+import helmet from "helmet";
 
-
+import { config } from "./config.js";
 import { loadData } from "./rag.js";
 import { setupRAG, getRelevantContext } from "./rag-advanced.js";
 import authRoutes from "./auth.js";
+import casesRoutes from "./cases.js";
+import { callHuggingFaceChat, cleanAIResponse } from "./llm.js";
+import { extractTextFromFile } from "./documentExtraction.js";
+import { upload, handleUploadErrors } from "./upload.js";
+import { authLimiter, llmLimiter } from "./rateLimiters.js";
 
 // Lazy initialization
 let isInitialized = false;
@@ -25,82 +24,25 @@ async function initialize() {
   }
 }
 
-
-async function fetchWithRetry(url, options, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fetch(url, options);
-    } catch (err) {
-      if (i === retries - 1) throw err;
-      console.log(`Fetch failed, retrying... (${i + 1}/${retries})`);
-      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
-    }
-  }
-}
-
-function cleanAIResponse(text) {
-  // Remove markdown code blocks if they exist
-  let cleaned = text.trim();
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```[a-z]*\n/i, "");
-    cleaned = cleaned.replace(/\n```$/i, "");
-  }
-  return cleaned.trim();
-}
-
 const app = express();
-app.use(cors());
+app.use(helmet());
+app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 
+app.use("/auth/login", authLimiter);
+app.use("/auth/signup", authLimiter);
+app.use("/auth/change-password", authLimiter);
 app.use("/auth", authRoutes);
+app.use("/cases", casesRoutes);
 
-const upload = multer({ storage: multer.memoryStorage() });
-
-const PORT = process.env.PORT || 3001;
-const HF_API_KEY = process.env.HF_API_KEY;
-const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen2.5-7B-Instruct";
-const HF_FALLBACK_MODELS = (process.env.HF_FALLBACK_MODELS || "HuggingFaceH4/zephyr-7b-beta")
-  .split(",")
-  .map((model) => model.trim())
-  .filter(Boolean);
-console.log("API KEY LOADED:", HF_API_KEY ? "Yes" : "No");
-
-async function callHuggingFaceChat(payload) {
-  const models = [...new Set([HF_MODEL, ...HF_FALLBACK_MODELS])];
-  let lastError = "";
-
-  for (const model of models) {
-    const response = await fetchWithRetry(
-      "https://router.huggingface.co/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...payload,
-          model,
-        }),
-      }
-    );
-
-    if (response.ok) {
-      return response;
-    }
-
-    lastError = await response.text();
-    console.error("HF API Error:", response.status, model, lastError);
-  }
-
-  throw new Error(lastError || "HF API failed");
-}
+const PORT = config.port;
+console.log("API KEY LOADED:", config.hfApiKey ? "Yes" : "No");
 
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
-app.post("/scan", upload.single("document"), async (req, res) => {
+app.post("/scan", llmLimiter, upload.single("document"), handleUploadErrors, async (req, res) => {
   try {
     await initialize();
     console.log("Scan request received");
@@ -108,34 +50,7 @@ app.post("/scan", upload.single("document"), async (req, res) => {
     let text = "";
     if (req.file) {
       console.log("File received:", req.file.originalname, "Mime:", req.file.mimetype);
-      if (req.file.mimetype === "application/pdf") {
-        const parser = new PDFParse({ data: req.file.buffer });
-        const data = await parser.getText();
-        text = data.text;
-        await parser.destroy();
-      } else if (
-        req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        req.file.originalname.endsWith(".docx")
-      ) {
-        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-        text = result.value;
-      } else if (
-        req.file.mimetype === "application/msword" ||
-        req.file.originalname.endsWith(".doc")
-      ) {
-        // Basic support for older .doc might be limited with mammoth but let's try
-        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-        text = result.value;
-      } else if (
-        req.file.mimetype.startsWith("image/")
-      ) {
-        console.log("Processing image with OCR...");
-        const result = await Tesseract.recognize(req.file.buffer, "eng");
-        text = result.data.text;
-      } else {
-        text = req.file.buffer.toString("utf8");
-      }
-
+      text = await extractTextFromFile(req.file);
     } else if (req.body.text) {
       text = req.body.text;
     } else {
@@ -161,9 +76,9 @@ app.post("/scan", upload.single("document"), async (req, res) => {
           role: "user",
           content: `
           Analyze the following legal document (or excerpt) and identify key risks:
-          
+
           "${text}"
-          
+
           Return ONLY valid JSON in this format:
           {
             "overallRisk": "low" | "medium" | "high",
@@ -210,40 +125,25 @@ app.post("/scan", upload.single("document"), async (req, res) => {
     console.log("Scan successful");
     res.json({ result });
   } catch (err) {
-    console.error("Unexpected error in /scan:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Unexpected error in /scan:", err.stack || err);
+    res.status(500).json({
+      error: "Internal Server Error",
+      details: err.message || String(err),
+    });
   }
 });
 
-app.post("/legal", upload.single("document"), async (req, res) => {
+app.post("/legal", llmLimiter, upload.single("document"), handleUploadErrors, async (req, res) => {
   await initialize();
   const { question } = req.body;
 
+  if (typeof question !== "string" || !question.trim()) {
+    return res.status(400).json({ error: "A question is required" });
+  }
+
   let fileText = "";
   if (req.file) {
-    if (req.file.mimetype === "application/pdf") {
-      const parser = new PDFParse({ data: req.file.buffer });
-      const data = await parser.getText();
-      fileText = data.text;
-      await parser.destroy();
-    } else if (
-      req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-      req.file.originalname.endsWith(".docx")
-    ) {
-      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-      fileText = result.value;
-    } else if (
-      req.file.mimetype === "application/msword" ||
-      req.file.originalname.endsWith(".doc")
-    ) {
-      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
-      fileText = result.value;
-    } else if (req.file.mimetype.startsWith("image/")) {
-      const result = await Tesseract.recognize(req.file.buffer, "eng");
-      fileText = result.data.text;
-    } else {
-      fileText = req.file.buffer.toString("utf8");
-    }
+    fileText = await extractTextFromFile(req.file);
   }
 
   let context = await getRelevantContext(question);
@@ -261,10 +161,10 @@ app.post("/legal", upload.single("document"), async (req, res) => {
           content: `
                         You are an expert legal assistant for Indian users. Your task is to provide helpful, accurate, and detailed legal advice.
 
-                        First, check if the provided Context is relevant to the Question. 
+                        First, check if the provided Context is relevant to the Question.
                         - If it is relevant, use it to answer the question.
                         - If it is NOT relevant, ignore the Context entirely and answer the question using your general legal knowledge.
-                        
+
                         CRITICAL: DO NOT mention the context in your response. DO NOT say "The context provided does not contain...". Just answer the question directly.
 
                         Context:
@@ -322,8 +222,11 @@ app.post("/legal", upload.single("document"), async (req, res) => {
     res.json(parsed);
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error");
+    console.error("Unexpected error in /legal:", err.stack || err);
+    res.status(500).json({
+      error: "Internal Server Error",
+      details: err.message || String(err),
+    });
   }
 });
 
