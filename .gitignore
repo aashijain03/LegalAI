@@ -1,3 +1,7 @@
 .DS_Store
 node_modules/
 .env
+Backend/users.json
+Backend/data/app.db
+Backend/data/app.db-wal
+Backend/data/app.db-shm

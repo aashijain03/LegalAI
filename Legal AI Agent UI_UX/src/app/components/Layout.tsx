@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { Scale, ScanText, MessageSquareText, LogOut, User as UserIcon } from "lucide-react";
+import { Scale, ScanText, MessageSquareText, Briefcase, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { Toaster } from "./ui/sonner";
 
 export function Layout() {
   const location = useLocation();
@@ -44,15 +45,31 @@ export function Layout() {
                 <MessageSquareText className="w-4 h-4" />
                 <span>Legal Advice</span>
               </Link>
+              {user && (
+                <Link
+                  to="/cases"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${location.pathname.startsWith("/cases")
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span>Cases</span>
+                </Link>
+              )}
 
               {user ? (
                 <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-200">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <Link
+                    to="/profile"
+                    className={`flex items-center gap-2 text-sm font-medium text-slate-700 px-2 py-1 rounded-md transition-colors hover:bg-slate-50 ${isActive("/profile") ? "bg-slate-100" : ""
+                      }`}
+                  >
                     <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
                       <UserIcon className="w-4 h-4 text-slate-600" />
                     </div>
                     <span>{user.name}</span>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => logout()}
                     className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors px-3 py-2 rounded-md hover:bg-red-50"
@@ -95,6 +112,7 @@ export function Layout() {
           </p>
         </div>
       </footer>
+      <Toaster />
     </div>
   );
 }

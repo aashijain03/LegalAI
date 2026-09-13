@@ -65,7 +65,7 @@ export function ScanDocument() {
       const data = await response.json();
 
       if (data.error) {
-        throw new Error(data.error);
+        throw new Error(data.details ? `${data.error}: ${data.details}` : data.error);
       }
 
       clearInterval(interval);
